@@ -1,5 +1,6 @@
+package org.os;
+
 import org.junit.jupiter.api.Test;
-import org.os.Example;
 
 import static org.junit.jupiter.api.Assertions.*;
 
