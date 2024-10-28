@@ -65,6 +65,104 @@ class CLITest {
         assertFalse(Files.exists(tempDir.resolve("fileToDelete.txt")), "rm command failed to delete the file");
     }
 
+    @Test
+    public void testCatDisplayFileContents() throws IOException {
+        String filename = "displayFile.txt";
+        Path filePath = tempDir.resolve(filename);
+        Files.write(filePath, "Hello, World!".getBytes());
+
+        CLI.handleCat(new String[]{"cat", filename});
+        assertTrue(outputStreamCaptor.toString().contains("Hello, World!"), "cat command failed to display file content");
+    }
+
+    @Test
+    public void testCatOverwriteOperator() throws IOException {
+        String filename = "overwriteFile.txt";
+        Path filePath = tempDir.resolve(filename);
+        Files.write(filePath, "Original content\n".getBytes());
+
+        // Simulate user input for overwriting content
+        System.setIn(new ByteArrayInputStream("New content\nEOF\n".getBytes()));
+        CLI.handleCat(new String[]{"cat", ">", filename});
+
+        // Verify file content was overwritten
+        String fileContent = Files.readString(filePath).replace("\r\n", "\n").replace("\r", "\n");
+        assertEquals("New content\n", fileContent, "cat > command failed to overwrite file content");
+    }
+
+    @Test
+    public void testCatAppendOperator() throws IOException {
+        String filename = "appendFile.txt";
+        Path filePath = tempDir.resolve(filename);
+        Files.write(filePath, "Initial content\n".getBytes());
+
+        // Simulate user input for appending content
+        System.setIn(new ByteArrayInputStream("Appended content\nEOF\n".getBytes()));
+        CLI.handleCat(new String[]{"cat", ">>", filename});
+
+        // Verify file content was appended
+        String fileContent = Files.readString(filePath).replace("\r\n", "\n").replace("\r", "\n");
+        assertEquals("Initial content\nAppended content\n", fileContent, "cat >> command failed to append to file content");
+    }
+
+    @Test
+    public void testCatWithMultipleFilesDisplay() throws IOException {
+        String filename1 = "file1.txt";
+        String filename2 = "file2.txt";
+        Path filePath1 = tempDir.resolve(filename1);
+        Path filePath2 = tempDir.resolve(filename2);
+
+        Files.write(filePath1, "Content of file 1\n".getBytes());
+        Files.write(filePath2, "Content of file 2\n".getBytes());
+
+        CLI.handleCat(new String[]{"cat", filename1, filename2});
+        String output = outputStreamCaptor.toString();
+
+        assertTrue(output.contains("Content of file 1"), "cat command failed to display content of file1");
+        assertTrue(output.contains("Content of file 2"), "cat command failed to display content of file2");
+    }
+
+    @Test
+    public void testCatWithMultipleFilesAndRedirectOverwrite() throws IOException {
+        String filename1 = "file1.txt";
+        String filename2 = "file2.txt";
+        String redirectFile = "outputFile.txt";
+
+        Path filePath1 = tempDir.resolve(filename1);
+        Path filePath2 = tempDir.resolve(filename2);
+        Path redirectPath = tempDir.resolve(redirectFile);
+
+        Files.write(filePath1, "First file content\n".getBytes());
+        Files.write(filePath2, "Second file content\n".getBytes());
+
+        CLI.handleCat(new String[]{"cat", filename1, filename2, ">", redirectFile});
+
+        String outputContent = Files.readString(redirectPath).replace("\r\n", "\n").replace("\r", "\n");
+        assertEquals("First file content\nSecond file content\n", outputContent, "cat > command failed to overwrite with multiple files");
+    }
+
+    @Test
+    public void testCatWithMultipleFilesAndRedirectAppend() throws IOException {
+        String filename1 = "file1.txt";
+        String filename2 = "file2.txt";
+        String redirectFile = "outputFile.txt";
+
+        Path filePath1 = tempDir.resolve(filename1);
+        Path filePath2 = tempDir.resolve(filename2);
+        Path redirectPath = tempDir.resolve(redirectFile);
+
+        // Initial content in redirect file
+        Files.write(redirectPath, "Initial output\n".getBytes());
+        Files.write(filePath1, "First file content\n".getBytes());
+        Files.write(filePath2, "Second file content\n".getBytes());
+
+        CLI.handleCat(new String[]{"cat", filename1, filename2, ">>", redirectFile});
+
+        String outputContent = Files.readString(redirectPath).replace("\r\n", "\n").replace("\r", "\n");
+        assertEquals("Initial output\nFirst file content\nSecond file content\n", outputContent, "cat >> command failed to append with multiple files");
+    }
+
+
 
 
     @Test

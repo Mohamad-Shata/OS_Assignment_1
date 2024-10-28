@@ -76,7 +76,7 @@ public class CLI {
                 break;
             case "cat":
 
-                cat(Arrays.copyOfRange(tokens, 1, tokens.length));
+                handleCat(tokens);
 
                 break;
             case "exit":
@@ -154,11 +154,41 @@ public class CLI {
         }
     }
 
+    public static void handleCat(String[] tokens) {
+        // Check for redirection operators > or >>
+        int redirectIndex = -1;
+        boolean append = false;
+
+        for (int i = 1; i < tokens.length; i++) {
+            if (tokens[i].equals(">")) {
+                redirectIndex = i;
+                append = false;
+                break;
+            } else if (tokens[i].equals(">>")) {
+                redirectIndex = i;
+                append = true;
+                break;
+            }
+        }
+
+        // Handle output redirection (cat with > or >>)
+        if (redirectIndex > -1 && redirectIndex < tokens.length - 1) {
+            // Get the file name to which we redirect output
+            String fileName = tokens[redirectIndex + 1];
+            String[] fileArgs = Arrays.copyOfRange(tokens, 1, redirectIndex);
+            catWithRedirect(fileArgs, fileName, append);
+        } else {
+            // No redirection, display contents on the screen
+            String[] fileArgs = Arrays.copyOfRange(tokens, 1, tokens.length);
+            cat(fileArgs);
+        }
+    }
+
     public static void cat(String... args) {
         Scanner scanner = new Scanner(System.in);
 
         if (args.length == 0) {
-            // Case 1: No arguments provided, act as an interactive `cat` command.
+            // Interactive mode (no arguments provided)
             System.out.println("Enter text (type 'EOF' on a new line to finish):");
 
             StringBuilder content = new StringBuilder();
@@ -172,39 +202,84 @@ public class CLI {
             // Print the captured content to the terminal.
             System.out.println("\nYou entered:\n" + content.toString());
 
-        } else if (args.length == 1) {
-            // Case 2: File name provided as an argument.
-            String fileName = args[0];
-            Path filePath = currentDirectory.resolve(fileName);
+        } else {
+            // One or more arguments provided
+            for (String fileName : args) {
+                Path filePath = currentDirectory.resolve(fileName);
 
-            // Check if the file exists; if not, create it.
-            if (!Files.exists(filePath)) {
-                try {
-                    Files.createFile(filePath);
-                    System.out.println("File created: " + fileName);
-                } catch (IOException e) {
-                    System.out.println("cat: cannot create file '" + fileName + "': " + e.getMessage());
-                    return;
+                // Check if the file exists
+                if (Files.exists(filePath)) {
+                    try {
+                        Files.lines(filePath).forEach(System.out::println);
+                    } catch (IOException e) {
+                        System.out.println("cat: error reading file '" + fileName + "': " + e.getMessage());
+                    }
+                } else {
+                    // If file doesn't exist, create it and allow the user to write to it
+                    System.out.println("File not found. Creating new file: " + fileName);
+                    try {
+                        Files.createFile(filePath);
+                    } catch (IOException e) {
+                        System.out.println("cat: cannot create file '" + fileName + "': " + e.getMessage());
+                        continue;
+                    }
+
+                    System.out.println("Enter text to write to " + fileName + " (type 'EOF' on a new line to finish):");
+                    try (BufferedWriter writer = Files.newBufferedWriter(filePath, StandardOpenOption.TRUNCATE_EXISTING)) {
+                        String line;
+                        // Capture multi-line input until 'EOF' is typed.
+                        while (!(line = scanner.nextLine()).equals("EOF")) {
+                            writer.write(line);
+                            writer.newLine();
+                        }
+                        System.out.println("Text written to file: " + fileName);
+                    } catch (IOException e) {
+                        System.out.println("cat: error writing to file '" + fileName + "': " + e.getMessage());
+                    }
                 }
             }
+        }
+    }
 
-            System.out.println("Enter text to write to " + fileName + " (type 'EOF' on a new line to finish):");
+    public static void catWithRedirect(String[] fileArgs, String fileName, boolean append) {
+        Path filePath = currentDirectory.resolve(fileName);
+        OpenOption option = append ? StandardOpenOption.APPEND : StandardOpenOption.TRUNCATE_EXISTING;
 
-            try (BufferedWriter writer = Files.newBufferedWriter(filePath, StandardOpenOption.TRUNCATE_EXISTING)) {
+        try (BufferedWriter writer = Files.newBufferedWriter(filePath, StandardOpenOption.CREATE, option)) {
+            if (fileArgs.length == 0) {
+                // Interactive mode: cat with redirection and no source file
+                Scanner scanner = new Scanner(System.in);
+                System.out.println("Enter text to write to " + fileName + " (type 'EOF' on a new line to finish):");
+
                 String line;
-                // Capture multi-line input until 'EOF' is typed.
                 while (!(line = scanner.nextLine()).equals("EOF")) {
                     writer.write(line);
                     writer.newLine();
                 }
-                System.out.println("Text written to file: " + fileName);
-            } catch (IOException e) {
-                System.out.println("cat: error writing to file '" + fileName + "': " + e.getMessage());
+            } else {
+                // Output contents of each specified file to target file
+                for (String sourceFileName : fileArgs) {
+                    Path sourceFilePath = currentDirectory.resolve(sourceFileName);
+                    if (Files.exists(sourceFilePath)) {
+                        Files.lines(sourceFilePath).forEach(line -> {
+                            try {
+                                writer.write(line);
+                                writer.newLine();
+                            } catch (IOException e) {
+                                System.out.println("cat: error writing to file '" + fileName + "': " + e.getMessage());
+                            }
+                        });
+                    } else {
+                        System.out.println("cat: " + sourceFileName + ": No such file or directory");
+                    }
+                }
             }
-        } else {
-            System.out.println("cat: too many arguments");
+            System.out.println("Text written to file: " + fileName);
+        } catch (IOException e) {
+            System.out.println("cat: error with file '" + fileName + "': " + e.getMessage());
         }
     }
+
 
     public static void exitCLI() {
         System.out.println("Exiting the CLI...");
