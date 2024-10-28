@@ -27,6 +27,133 @@ class CLITest {
     public void tearDown() {
         System.setOut(System.out);
     }
+  
+    @Test
+    public void testLsRecursiveListsFilesInSubdirectories() throws IOException {
+    
+        Path subDir1 = tempDir.resolve("subdir1");
+        Path subDir2 = tempDir.resolve("subdir2");
+        Files.createDirectory(subDir1);
+        Files.createDirectory(subDir2);
+        
+        Path file1 = subDir1.resolve("file1.txt");
+        Path file2 = subDir1.resolve("file2.txt");
+        Path file3 = subDir2.resolve("file3.txt");
+        Files.createFile(file1);
+        Files.createFile(file2);
+        Files.createFile(file3);
+    
+        
+        CLI.lsr();
+    
+        String expectedOutput = "Listing files recursively in: " + tempDir + "\n" +
+                                "subdir1\n" +
+                                "subdir1/file1.txt\n" +
+                                "subdir1/file2.txt\n" +
+                                "subdir2\n" +
+                                "subdir2/file3.txt";
+        assertEquals(expectedOutput.trim(), outputStreamCaptor.toString().trim());
+    }
+    @Test
+    public void testLsRecursiveHandlesMultipleFileTypes() throws IOException {
+    
+    Path dir1 = tempDir.resolve("dir1");
+    Path dir2 = tempDir.resolve("dir2");
+    Files.createDirectory(dir1);
+    Files.createDirectory(dir2);
+    
+    Path textFile1 = dir1.resolve("file1.txt");
+    Path textFile2 = dir1.resolve("file2.txt");
+    Path emptyFile = dir2.resolve("emptyFile.txt");
+    Path nestedDir = dir1.resolve("nestedDir");
+    Files.createFile(textFile1);
+    Files.createFile(textFile2);
+    Files.createFile(emptyFile);
+    Files.createDirectory(nestedDir);
+    
+   
+    Path nestedFile = nestedDir.resolve("nestedFile.txt");
+    Files.createFile(nestedFile);
+    
+  
+    CLI.lsr();
+    
+   
+    String expectedOutput = "Listing files recursively in: " + tempDir + "\n" +
+                            "dir1\n" +
+                            "dir1/nestedDir\n" +
+                            "dir1/nestedDir/nestedFile.txt\n" +
+                            "dir1/file1.txt\n" +
+                            "dir1/file2.txt\n" +
+                            "dir2\n" +
+                            "dir2/emptyFile.txt";
+    
+    assertEquals(expectedOutput.trim(), outputStreamCaptor.toString().trim());
+    }
+
+    @Test
+    public void testLsShowsHiddenFilesWhenFlagIsTrue() throws IOException {
+    
+    Path hiddenFile = tempDir.resolve(".hiddenFile.txt");
+    Files.createFile(hiddenFile);
+
+    CLI.lsa(true);
+    
+    String expectedOutput = "Listing files in: " + tempDir + "\n" + ".hiddenFile.txt";
+    assertEquals(expectedOutput.trim(), outputStreamCaptor.toString().trim());
+    }
+
+    @Test
+    public void testLsDoesNotShowHiddenFilesWhenFlagIsFalse() throws IOException {
+
+    Path hiddenFile = tempDir.resolve(".hiddenFile.txt");
+    Files.createFile(hiddenFile);
+
+    CLI.lsa(false);
+
+    String expectedOutput = "Listing files in: " + tempDir;
+    assertEquals(expectedOutput.trim(), outputStreamCaptor.toString().trim());
+    }
+
+    
+     
+    @Test
+    public void testLsEmptyDirectory() {
+    CLI.ls();  
+    String expectedOutput = "Listing files in: " + tempDir; 
+    assertEquals(expectedOutput, outputStreamCaptor.toString().trim());
+    }
+
+
+    @Test
+    public void testLsWithFiles() throws Exception {
+     
+        Files.createFile(tempDir.resolve("file1.txt"));
+        Files.createFile(tempDir.resolve("file2.txt"));
+        Files.createDirectory(tempDir.resolve("folder1"));
+
+      
+        CLI.ls();
+
+        
+        String expectedOutput = "Listing files in: " + tempDir + System.lineSeparator() +
+                                 "file1.txt" + System.lineSeparator() +
+                                 "file2.txt" + System.lineSeparator() +
+                                 "folder1";
+        assertEquals(expectedOutput.trim(), outputStreamCaptor.toString().trim());
+    }
+
+    @Test
+    public void testLsHandlesIOException() throws Exception {
+        
+        Path notADirectory = Files.createFile(tempDir.resolve("not_a_directory.txt"));
+        CLI.setCurrentDirectory(notADirectory);  
+
+        CLI.ls(); 
+
+      
+        assertTrue(outputStreamCaptor.toString().contains("Error reading directory:"));
+    }
 
     @Test
     public void testPwd() {
