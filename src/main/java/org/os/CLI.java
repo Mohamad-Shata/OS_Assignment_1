@@ -46,6 +46,12 @@ public class CLI {
             case "ls":
                 ls(tokens);
                 break;
+            case "ls-a":
+                lsa(running);
+                break;
+            case "ls-r":
+                lsr();
+                break;
             case "mkdir":
                 if (tokens.length > 1) {
                     mkdir(tokens[1]);
@@ -94,6 +100,51 @@ public class CLI {
         System.out.println(currentDirectory);
     }
 
+    public static void ls() {
+        try {
+            System.out.println("Listing files in: " + currentDirectory);
+            Files.list(currentDirectory).forEach(path -> System.out.println(path.getFileName()));
+        } catch (IOException e) {
+            System.out.println("Error reading directory: " + e.getMessage());
+        }
+    }
+
+
+    public static void lsa(boolean showHidden) {
+        try {
+            System.out.println("Listing files in: " + currentDirectory);
+            Files.list(currentDirectory)
+                    .filter(path -> showHidden || !path.getFileName().toString().startsWith("."))
+                    .forEach(path -> System.out.println(path.getFileName()));
+        } catch (IOException e) {
+            System.out.println("Error reading directory: " + e.getMessage());
+        }
+    }
+    
+    public static void lsr() {
+        try {
+    
+            System.out.println("Listing files recursively in: " + currentDirectory);
+            
+           
+            Files.walk(currentDirectory)
+                    .forEach(path -> {
+                        
+                        String relativePath = currentDirectory.relativize(path).toString();
+                        
+                        if (!relativePath.isEmpty()) {
+                            System.out.println(relativePath);
+                        }
+                    });
+        } catch (IOException e) {
+            System.out.println("Error reading directory: " + e.getMessage());
+        }
+    }
+    
+
+    
+    
+    
     public static void cd(String path) {
         Path newPath = currentDirectory.resolve(path).normalize();
         if (Files.exists(newPath) && Files.isDirectory(newPath)) {
@@ -185,6 +236,7 @@ public class CLI {
     }
 
     public static void cat(String... args) {
+        @SuppressWarnings("resource")
         Scanner scanner = new Scanner(System.in);
 
         if (args.length == 0) {
@@ -248,6 +300,7 @@ public class CLI {
         try (BufferedWriter writer = Files.newBufferedWriter(filePath, StandardOpenOption.CREATE, option)) {
             if (fileArgs.length == 0) {
                 // Interactive mode: cat with redirection and no source file
+                @SuppressWarnings("resource")
                 Scanner scanner = new Scanner(System.in);
                 System.out.println("Enter text to write to " + fileName + " (type 'EOF' on a new line to finish):");
 
@@ -291,6 +344,8 @@ public class CLI {
         System.out.println("  pwd: Print current working directory.");
         System.out.println("  cd <dir>: Change directory.");
         System.out.println("  ls: List files in the current directory.");
+        System.out.println("  ls -a:Lists all files, including hidden ones.");
+        System.out.println("  ls -r :Lists files recursively in subdirectories.");
         System.out.println("  mkdir <dir>: Create a new directory.");
         System.out.println("  rmdir <dir>: Remove an empty directory.");
         System.out.println("  touch <file>: Create an empty file.");
