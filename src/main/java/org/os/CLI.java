@@ -54,9 +54,11 @@ public class CLI {
                 break;
             case "mkdir":
                 if (tokens.length > 1) {
-                    mkdir(tokens[1]);
+                    for (int i = 1; i < tokens.length; i++) {
+                        mkdir(tokens[i]);
+                    }
                 } else {
-                    System.out.println("mkdir: missing operand");
+                    System.out.println("mkdir: missing argument");
                 }
                 break;
             case "rmdir":
@@ -96,7 +98,8 @@ public class CLI {
         }
     }
 
-    public static void pwd() {
+     public static void pwd() 
+    {
         System.out.println(currentDirectory);
     }
 
@@ -165,7 +168,8 @@ public class CLI {
         }
     }
 
-    public static void mkdir(String dirName) {
+    public static void mkdir(String dirName) 
+    {
         Path dirPath = currentDirectory.resolve(dirName);
         try {
             Files.createDirectory(dirPath);
@@ -175,13 +179,14 @@ public class CLI {
         }
     }
 
-    public static void rmdir(String dirName) {
+    public static void rmdir(String dirName)
+    {
         Path dirPath = currentDirectory.resolve(dirName);
         try {
             Files.delete(dirPath);
             System.out.println("Directory removed: " + dirName);
         } catch (IOException e) {
-            System.out.println("rmdir: failed to remove '" + dirName + "': " + e.getMessage());
+            System.out.println("rmdir: failed to remove '" + dirName + "': Directory not empty");
         }
     }
 
@@ -334,7 +339,8 @@ public class CLI {
     }
 
 
-    public static void exitCLI() {
+    public static void exitCLI() 
+    {
         System.out.println("Exiting the CLI...");
         running = false;
     }
