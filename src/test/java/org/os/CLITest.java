@@ -156,7 +156,8 @@ class CLITest {
     }
 
     @Test
-    public void testPwd() {
+    public void test_pwd()
+    {
         CLI.pwd();
         assertTrue(outputStreamCaptor.toString().contains(tempDir.toString()), "pwd command failed");
     }
@@ -170,12 +171,21 @@ class CLITest {
     }
 
     @Test
-    public void testMkdirAndLs() {
+    public void test_mkdir()
+    {
         CLI.mkdir("newDir");
         CLI.ls(new String[]{});
-        assertTrue(outputStreamCaptor.toString().contains("newDir"), "mkdir or ls command failed");
+        assertTrue(outputStreamCaptor.toString().contains("newDir"), "mkdir command failed");
     }
 
+    @Test
+    public void test_rmdir()
+    {
+        Path dir = tempDir.resolve("dir");
+        CLI.mkdir("dir");
+        assertTrue(Files.exists(dir) && Files.isDirectory(dir), "Directory was not created properly");
+    }
+    
     @Test
     public void testTouchAndLs() {
         CLI.touch("testFile.txt");
@@ -307,4 +317,13 @@ class CLITest {
         assertTrue(helpOutput.contains("cd <dir>"), "Help command output does not list 'cd'");
         assertTrue(helpOutput.contains("ls"), "Help command output does not list 'ls'");
     }
+
+    @Test
+    void test_exit_CLI()
+    {
+        CLI.running = true;
+        CLI.exitCLI();
+        assertFalse(CLI.running, "CLI should not be running after exit");
+    }
+
 }
