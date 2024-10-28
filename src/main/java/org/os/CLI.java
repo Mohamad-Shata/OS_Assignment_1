@@ -1,4 +1,5 @@
 package org.os;
+import java.util.Arrays;
 import java.io.*;
 import java.nio.file.*;
 import java.util.Scanner;
@@ -47,9 +48,11 @@ public class CLI {
                 break;
             case "mkdir":
                 if (tokens.length > 1) {
-                    mkdir(tokens[1]);
+                    for (int i = 1; i < tokens.length; i++) {
+                        mkdir(tokens[i]);
+                    }
                 } else {
-                    System.out.println("mkdir: missing operand");
+                    System.out.println("mkdir: missing argument");
                 }
                 break;
             case "rmdir":
@@ -74,11 +77,9 @@ public class CLI {
                 }
                 break;
             case "cat":
-                if (tokens.length > 1) {
-                    cat(tokens[1]);
-                } else {
-                    System.out.println("cat: missing operand");
-                }
+
+                cat(Arrays.copyOfRange(tokens, 1, tokens.length));
+
                 break;
             case "exit":
                 exitCLI();
@@ -131,7 +132,7 @@ public class CLI {
             Files.delete(dirPath);
             System.out.println("Directory removed: " + dirName);
         } catch (IOException e) {
-            System.out.println("rmdir: failed to remove '" + dirName + "': " + e.getMessage());
+            System.out.println("rmdir: failed to remove '" + dirName + "': Directory not empty");
         }
     }
 
@@ -155,12 +156,55 @@ public class CLI {
         }
     }
 
-    public static void cat(String fileName) {
-        Path filePath = currentDirectory.resolve(fileName);
-        try {
-            Files.lines(filePath).forEach(System.out::println);
-        } catch (IOException e) {
-            System.out.println("cat: cannot read file '" + fileName + "': " + e.getMessage());
+    public static void cat(String... args) {
+        Scanner scanner = new Scanner(System.in);
+
+        if (args.length == 0) {
+            // Case 1: No arguments provided, act as an interactive `cat` command.
+            System.out.println("Enter text (type 'EOF' on a new line to finish):");
+
+            StringBuilder content = new StringBuilder();
+            String line;
+
+            // Capture multi-line input until 'EOF' is typed.
+            while (!(line = scanner.nextLine()).equals("EOF")) {
+                content.append(line).append(System.lineSeparator());
+            }
+
+            // Print the captured content to the terminal.
+            System.out.println("\nYou entered:\n" + content.toString());
+
+        } else if (args.length == 1) {
+            // Case 2: File name provided as an argument.
+            String fileName = args[0];
+            Path filePath = currentDirectory.resolve(fileName);
+
+            // Check if the file exists; if not, create it.
+            if (!Files.exists(filePath)) {
+                try {
+                    Files.createFile(filePath);
+                    System.out.println("File created: " + fileName);
+                } catch (IOException e) {
+                    System.out.println("cat: cannot create file '" + fileName + "': " + e.getMessage());
+                    return;
+                }
+            }
+
+            System.out.println("Enter text to write to " + fileName + " (type 'EOF' on a new line to finish):");
+
+            try (BufferedWriter writer = Files.newBufferedWriter(filePath, StandardOpenOption.TRUNCATE_EXISTING)) {
+                String line;
+                // Capture multi-line input until 'EOF' is typed.
+                while (!(line = scanner.nextLine()).equals("EOF")) {
+                    writer.write(line);
+                    writer.newLine();
+                }
+                System.out.println("Text written to file: " + fileName);
+            } catch (IOException e) {
+                System.out.println("cat: error writing to file '" + fileName + "': " + e.getMessage());
+            }
+        } else {
+            System.out.println("cat: too many arguments");
         }
     }
 
