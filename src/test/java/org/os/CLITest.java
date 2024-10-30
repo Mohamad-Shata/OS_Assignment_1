@@ -16,10 +16,8 @@ class CLITest {
 
     @BeforeEach
     public void setUp() {
-        // Redirect system output to capture CLI output.
         System.setOut(new PrintStream(outputStreamCaptor));
 
-        // Set the current directory of CLI to the temporary directory.
         CLI.setCurrentDirectory(tempDir);
     }
 
@@ -194,37 +192,29 @@ class CLITest {
 
     @Test
     public void testMv_rename() {
-        // Create the original file
         Path oldFilePath = tempDir.resolve("file1.txt");
         Path newFilePath = tempDir.resolve("file2.txt");
 
-        // Create the file using your CLI touch method
         CLI.touch(oldFilePath.toString());
 
-        // Now call your mv method to rename/move the file
         CLI.mv(oldFilePath.toString(), newFilePath.toString());
 
-        // Assert that the new file exists
         assertTrue(Files.exists(newFilePath), "File rename failed");
         assertFalse(Files.exists(oldFilePath), "Old file should not exist after rename");
 
     }
     @Test
     public void testMv_move() {
-        // Setup paths
         Path sourceFilePath = tempDir.resolve("file1.txt");
         Path targetDirPath = tempDir.resolve("targetDir");
         Path targetFilePath = targetDirPath.resolve("file1.txt");
 
-        // Create the source file using your CLI touch method
         CLI.touch(sourceFilePath.toString());
 
        CLI.mkdir(targetDirPath.toString());
 
-        // Move the file using your CLI mv method
         CLI.mv(sourceFilePath.toString(), targetDirPath.toString());
 
-        // Assert that the file has been moved
         assertTrue(Files.exists(targetFilePath), "File was  not moved to target directory  .");
         assertFalse(Files.exists(sourceFilePath), "Source file still exists.");
     }
@@ -255,11 +245,9 @@ class CLITest {
         Path filePath = tempDir.resolve(filename);
         Files.write(filePath, "Original content\n".getBytes());
 
-        // Simulate user input for overwriting content
         System.setIn(new ByteArrayInputStream("New content\nEOF\n".getBytes()));
         CLI.handleCat(new String[]{"cat", ">", filename});
 
-        // Verify file content was overwritten
         String fileContent = Files.readString(filePath).replace("\r\n", "\n").replace("\r", "\n");
         assertEquals("New content\n", fileContent, "cat > command failed to overwrite file content");
     }
@@ -270,11 +258,9 @@ class CLITest {
         Path filePath = tempDir.resolve(filename);
         Files.write(filePath, "Initial content\n".getBytes());
 
-        // Simulate user input for appending content
         System.setIn(new ByteArrayInputStream("Appended content\nEOF\n".getBytes()));
         CLI.handleCat(new String[]{"cat", ">>", filename});
 
-        // Verify file content was appended
         String fileContent = Files.readString(filePath).replace("\r\n", "\n").replace("\r", "\n");
         assertEquals("Initial content\nAppended content\n", fileContent, "cat >> command failed to append to file content");
     }
@@ -325,7 +311,6 @@ class CLITest {
         Path filePath2 = tempDir.resolve(filename2);
         Path redirectPath = tempDir.resolve(redirectFile);
 
-        // Initial content in redirect file
         Files.write(redirectPath, "Initial output\n".getBytes());
         Files.write(filePath1, "First file content\n".getBytes());
         Files.write(filePath2, "Second file content\n".getBytes());
