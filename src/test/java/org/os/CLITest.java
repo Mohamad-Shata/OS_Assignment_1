@@ -50,7 +50,11 @@ class CLITest {
                                 "subdir1/file2.txt\n" +
                                 "subdir2\n" +
                                 "subdir2/file3.txt";
-        assertEquals(expectedOutput.trim(), outputStreamCaptor.toString().trim());
+
+        String actualOutput = outputStreamCaptor.toString().replace("\r\n", "\n");
+        expectedOutput = expectedOutput.replace("\r\n","\n");
+
+        assertEquals(expectedOutput.trim(), actualOutput.trim());
     }
     @Test
     public void testLsRecursiveHandlesMultipleFileTypes() throws IOException {
@@ -85,20 +89,52 @@ class CLITest {
                             "dir1/file2.txt\n" +
                             "dir2\n" +
                             "dir2/emptyFile.txt";
+
+        String actualOutput = outputStreamCaptor.toString().replace("\r\n", "\n");
+        expectedOutput = expectedOutput.replace("\r\n","\n");
     
-    assertEquals(expectedOutput.trim(), outputStreamCaptor.toString().trim());
+    assertEquals(expectedOutput.trim(), actualOutput.trim());
+    }
+
+    @Test
+    public void testLsGrep() throws IOException {
+        Path testGrepFile = tempDir.resolve("test_grep.txt");
+        Path otherFile = tempDir.resolve("other_file.txt");
+
+        Files.createFile(testGrepFile);
+        Files.createFile(otherFile);
+
+        CLI.setCurrentDirectory(tempDir);
+
+        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(outContent));
+
+        CLI.lsGrep("test_grep");
+
+        String output = outContent.toString().trim();
+        assertEquals("test_grep.txt", output);
+
+        System.setOut(System.out);
     }
 
     @Test
     public void testLsShowsHiddenFilesWhenFlagIsTrue() throws IOException {
-    
-    Path hiddenFile = tempDir.resolve(".hiddenFile.txt");
-    Files.createFile(hiddenFile);
+        // Create a hidden file in the temporary directory
+        Path hiddenFile = tempDir.resolve(".hiddenFile.txt");
+        Files.createFile(hiddenFile);
 
-    CLI.lsa(true);
-    
-    String expectedOutput = "Listing files in: " + tempDir + "\n" + ".hiddenFile.txt";
-    assertEquals(expectedOutput.trim(), outputStreamCaptor.toString().trim());
+        // Call the CLI method with the flag set to true
+        CLI.lsa(true);
+
+        // Prepare expected output
+        String expectedOutput = "Listing files in: " + tempDir + "\n" + ".hiddenFile.txt";
+
+        // Normalize line endings
+        String actualOutput = outputStreamCaptor.toString().replace("\r\n", "\n");
+        expectedOutput = expectedOutput.replace("\r\n", "\n");
+
+        // Assert that the expected output matches the actual output
+        assertEquals(expectedOutput.trim(), actualOutput.trim());
     }
 
     @Test

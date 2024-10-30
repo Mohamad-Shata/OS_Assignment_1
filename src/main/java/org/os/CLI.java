@@ -3,6 +3,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.Scanner;
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 public class CLI {
 
@@ -45,7 +46,15 @@ public class CLI {
                 }
                 break;
             case "ls":
-                ls(tokens);
+                if (tokens.length > 1 && tokens[1].equals("|")) {
+                    if (tokens.length == 4 && tokens[2].equals("grep")) {
+                        lsGrep(tokens[3]); // Assuming the grep keyword is always "grep"
+                    } else {
+                        System.out.println("Invalid command after pipe");
+                    }
+                } else {
+                    ls(tokens); // Handle normal ls command
+                }
                 break;
             case "ls-a":
                 lsa(running);
@@ -118,6 +127,17 @@ public class CLI {
             Files.list(currentDirectory).forEach(path -> System.out.println(path.getFileName()));
         } catch (IOException e) {
             System.out.println("Error reading directory: " + e.getMessage());
+        }
+    }
+
+    public static void lsGrep(String searchTerm) {
+        try (Stream<Path> stream = Files.list(currentDirectory)) {
+            stream
+                    .filter(path -> path.getFileName().toString().contains(searchTerm))
+                    .map(Path::getFileName) // Extract the filename
+                    .forEach(System.out::println);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
