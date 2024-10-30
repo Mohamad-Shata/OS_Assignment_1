@@ -154,7 +154,7 @@ class CLITest {
     }
 
     @Test
-    public void testPwd() {
+    public void test_pwd() {
         CLI.pwd();
         assertTrue(outputStreamCaptor.toString().contains(tempDir.toString()), "pwd command failed");
     }
@@ -168,7 +168,7 @@ class CLITest {
     }
 
     @Test
-    public void testMkdirAndLs() {
+    public void test_mkdir() {
 
         CLI.mkdir("newDir");
         CLI.ls(new String[]{});
