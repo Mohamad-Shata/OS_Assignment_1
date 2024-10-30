@@ -206,10 +206,14 @@ public class CLI {
     public static void rmdir(String dirName) {
         Path dirPath = currentDirectory.resolve(dirName);
         try {
-            Files.delete(dirPath);
-            System.out.println("Directory removed: " + dirName);
+            if (Files.isDirectory(dirPath)) {
+                Files.delete(dirPath);
+                System.out.println("Directory removed: " + dirName);
+            } else {
+                System.out.println("rmdir: '" + dirName + "' is not a directory");
+            }
         } catch (IOException e) {
-            System.out.println("rmdir: failed to remove '" + dirName + "': Directory not empty");
+            System.out.println("rmdir: failed to remove '" + dirName);
         }
     }
 
