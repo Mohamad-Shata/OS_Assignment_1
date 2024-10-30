@@ -1,8 +1,8 @@
 package org.os;
-import java.util.Arrays;
 import java.io.*;
 import java.nio.file.*;
 import java.util.Scanner;
+import java.util.Arrays;
 
 public class CLI {
 
@@ -98,8 +98,7 @@ public class CLI {
         }
     }
 
-     public static void pwd() 
-    {
+    public static void pwd() {
         System.out.println(currentDirectory);
     }
 
@@ -123,18 +122,18 @@ public class CLI {
             System.out.println("Error reading directory: " + e.getMessage());
         }
     }
-    
+
     public static void lsr() {
         try {
-    
+
             System.out.println("Listing files recursively in: " + currentDirectory);
-            
-           
+
+
             Files.walk(currentDirectory)
                     .forEach(path -> {
-                        
+
                         String relativePath = currentDirectory.relativize(path).toString();
-                        
+
                         if (!relativePath.isEmpty()) {
                             System.out.println(relativePath);
                         }
@@ -143,11 +142,11 @@ public class CLI {
             System.out.println("Error reading directory: " + e.getMessage());
         }
     }
-    
 
-    
-    
-    
+
+
+
+
     public static void cd(String path) {
         Path newPath = currentDirectory.resolve(path).normalize();
         if (Files.exists(newPath) && Files.isDirectory(newPath)) {
@@ -168,8 +167,7 @@ public class CLI {
         }
     }
 
-    public static void mkdir(String dirName) 
-    {
+    public static void mkdir(String dirName) {
         Path dirPath = currentDirectory.resolve(dirName);
         try {
             Files.createDirectory(dirPath);
@@ -179,8 +177,7 @@ public class CLI {
         }
     }
 
-    public static void rmdir(String dirName)
-    {
+    public static void rmdir(String dirName) {
         Path dirPath = currentDirectory.resolve(dirName);
         try {
             Files.delete(dirPath);
@@ -338,9 +335,7 @@ public class CLI {
         }
     }
 
-
-    public static void exitCLI() 
-    {
+    public static void exitCLI() {
         System.out.println("Exiting the CLI...");
         running = false;
     }
