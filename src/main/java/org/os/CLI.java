@@ -130,7 +130,7 @@ public class CLI {
         }
     }
 
-    private static void lsGrep(String searchTerm) {
+    public static void lsGrep(String searchTerm) {
         try (Stream<Path> stream = Files.list(currentDirectory)) {
             stream
                     .filter(path -> path.getFileName().toString().contains(searchTerm))

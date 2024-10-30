@@ -97,6 +97,27 @@ class CLITest {
     }
 
     @Test
+    public void testLsGrep() throws IOException {
+        Path testGrepFile = tempDir.resolve("test_grep.txt");
+        Path otherFile = tempDir.resolve("other_file.txt");
+
+        Files.createFile(testGrepFile);
+        Files.createFile(otherFile);
+
+        CLI.setCurrentDirectory(tempDir);
+
+        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(outContent));
+
+        CLI.lsGrep("test_grep");
+
+        String output = outContent.toString().trim();
+        assertEquals("test_grep.txt", output);
+
+        System.setOut(System.out);
+    }
+
+    @Test
     public void testLsShowsHiddenFilesWhenFlagIsTrue() throws IOException {
         // Create a hidden file in the temporary directory
         Path hiddenFile = tempDir.resolve(".hiddenFile.txt");
