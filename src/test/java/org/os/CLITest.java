@@ -156,8 +156,7 @@ class CLITest {
     }
 
     @Test
-    public void test_pwd()
-    {
+    public void testPwd() {
         CLI.pwd();
         assertTrue(outputStreamCaptor.toString().contains(tempDir.toString()), "pwd command failed");
     }
@@ -171,11 +170,11 @@ class CLITest {
     }
 
     @Test
-    public void test_mkdir()
-    {
+    public void testMkdirAndLs() {
+
         CLI.mkdir("newDir");
         CLI.ls(new String[]{});
-        assertTrue(outputStreamCaptor.toString().contains("newDir"), "mkdir command failed");
+        assertTrue(outputStreamCaptor.toString().contains("newDir"), "mkdir or ls command failed");
     }
 
     @Test
@@ -185,13 +184,51 @@ class CLITest {
         CLI.mkdir("dir");
         assertTrue(Files.exists(dir) && Files.isDirectory(dir), "Directory was not created properly");
     }
-    
+
     @Test
     public void testTouchAndLs() {
         CLI.touch("testFile.txt");
         CLI.ls(new String[]{});
         assertTrue(outputStreamCaptor.toString().contains("testFile.txt"), "touch or ls command failed");
     }
+
+    @Test
+    public void testMv_rename() {
+        // Create the original file
+        Path oldFilePath = tempDir.resolve("file1.txt");
+        Path newFilePath = tempDir.resolve("file2.txt");
+
+        // Create the file using your CLI touch method
+        CLI.touch(oldFilePath.toString());
+
+        // Now call your mv method to rename/move the file
+        CLI.mv(oldFilePath.toString(), newFilePath.toString());
+
+        // Assert that the new file exists
+        assertTrue(Files.exists(newFilePath), "File rename failed");
+        assertFalse(Files.exists(oldFilePath), "Old file should not exist after rename");
+
+    }
+    @Test
+    public void testMv_move() {
+        // Setup paths
+        Path sourceFilePath = tempDir.resolve("file1.txt");
+        Path targetDirPath = tempDir.resolve("targetDir");
+        Path targetFilePath = targetDirPath.resolve("file1.txt");
+
+        // Create the source file using your CLI touch method
+        CLI.touch(sourceFilePath.toString());
+
+       CLI.mkdir(targetDirPath.toString());
+
+        // Move the file using your CLI mv method
+        CLI.mv(sourceFilePath.toString(), targetDirPath.toString());
+
+        // Assert that the file has been moved
+        assertTrue(Files.exists(targetFilePath), "File was  not moved to target directory  .");
+        assertFalse(Files.exists(sourceFilePath), "Source file still exists.");
+    }
+
 
     @Test
     public void testRm() {

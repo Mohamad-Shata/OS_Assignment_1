@@ -32,6 +32,7 @@ public class CLI {
     public static void processInput(String input) {
         String[] tokens = input.split("\\s+");
 
+
         switch (tokens[0]) {
             case "pwd":
                 pwd();
@@ -81,6 +82,15 @@ public class CLI {
                 } else {
                     System.out.println("rm: missing operand");
                 }
+                break;
+            case "mv":
+                if (tokens.length > 2) {
+
+                    mv(tokens[1],tokens[2]);
+                } else {
+                    System.out.println("mv: missing operand");
+                }
+
                 break;
             case "cat":
 
@@ -207,6 +217,41 @@ public class CLI {
         }
     }
 
+
+
+    public static void mv(String sourceName, String targetName) {
+        // Create a Path object for the source file
+        Path sourcePath = Paths.get(sourceName);
+
+        // Check if source file exists
+        if (!Files.exists(sourcePath)) {
+            System.out.println("Source file does not exist.");
+            return;
+        }
+
+        // Create a Path object for the target
+        Path targetPath = Paths.get(targetName);
+
+        try {
+            // Check if the target is a directory
+            if (Files.isDirectory(targetPath)) {
+                // If target is a directory, move the source file into this directory
+                Path destination = targetPath.resolve(sourcePath.getFileName());
+                Files.move(sourcePath, destination);
+                System.out.println("File moved to directory: " + destination);
+            } else {
+                // If target is not a directory, rename the file to the target name
+                Files.move(sourcePath, targetPath);
+                System.out.println("File renamed to: " + targetPath);
+            }
+        } catch (IOException e) {
+            System.out.println("Error occurred while moving or renaming the file.");
+            e.printStackTrace();
+        }
+
+
+    }
+
     public static void handleCat(String[] tokens) {
         // Check for redirection operators > or >>
         int redirectIndex = -1;
@@ -297,39 +342,8 @@ public class CLI {
 
     public static void catWithRedirect(String[] fileArgs, String fileName, boolean append) {
         Path filePath = currentDirectory.resolve(fileName);
-        OpenOption option = append ? StandardOpenOption.APPEND : StandardOpenOption.TRUNCATE_EXISTING;
-
-        try (BufferedWriter writer = Files.newBufferedWriter(filePath, StandardOpenOption.CREATE, option)) {
-            if (fileArgs.length == 0) {
-                // Interactive mode: cat with redirection and no source file
-                @SuppressWarnings("resource")
-                Scanner scanner = new Scanner(System.in);
-                System.out.println("Enter text to write to " + fileName + " (type 'EOF' on a new line to finish):");
-
-                String line;
-                while (!(line = scanner.nextLine()).equals("EOF")) {
-                    writer.write(line);
-                    writer.newLine();
-                }
-            } else {
-                // Output contents of each specified file to target file
-                for (String sourceFileName : fileArgs) {
-                    Path sourceFilePath = currentDirectory.resolve(sourceFileName);
-                    if (Files.exists(sourceFilePath)) {
-                        Files.lines(sourceFilePath).forEach(line -> {
-                            try {
-                                writer.write(line);
-                                writer.newLine();
-                            } catch (IOException e) {
-                                System.out.println("cat: error writing to file '" + fileName + "': " + e.getMessage());
-                            }
-                        });
-                    } else {
-                        System.out.println("cat: " + sourceFileName + ": No such file or directory");
-                    }
-                }
-            }
-            System.out.println("Text written to file: " + fileName);
+        try {
+            Files.lines(filePath).forEach(System.out::println);
         } catch (IOException e) {
             System.out.println("cat: error with file '" + fileName + "': " + e.getMessage());
         }
@@ -350,6 +364,7 @@ public class CLI {
         System.out.println("  mkdir <dir>: Create a new directory.");
         System.out.println("  rmdir <dir>: Remove an empty directory.");
         System.out.println("  touch <file>: Create an empty file.");
+        System.out.println("  mv <file1> <file2>: rename file1 to file2 or move file1 to file2 directory if exists.");
         System.out.println("  rm <file>: Remove a file.");
         System.out.println("  cat <file>: Display the contents of a file.");
         System.out.println("  exit: Terminate the CLI.");
