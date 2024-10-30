@@ -3,6 +3,9 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.Scanner;
 import java.util.Arrays;
+import java.util.stream.Stream;
+import java.util.Comparator;
+
 
 public class CLI {
 
@@ -45,13 +48,21 @@ public class CLI {
                 }
                 break;
             case "ls":
-                ls(tokens);
+                if (tokens.length > 1 && tokens[1].equals("|")) {
+                    if (tokens.length == 4 && tokens[2].equals("grep")) {
+                        lsGrep(tokens[3]); // Assuming the grep keyword is always "grep"
+                    } else {
+                        System.out.println("Invalid command after pipe");
+                    }
+                } else {
+                    ls(tokens); // Handle normal ls command
+                }
                 break;
             case "ls-a":
                 lsa(running);
                 break;
             case "ls-r":
-                lsr();
+                lsReverse();
                 break;
             case "mkdir":
                 if (tokens.length > 1) {
@@ -103,6 +114,7 @@ public class CLI {
             case "help":
                 displayHelp();
                 break;
+
             default:
                 System.out.println("Command not found: " + tokens[0]);
         }
@@ -121,6 +133,32 @@ public class CLI {
         }
     }
 
+    public static void lsReverse() {
+        try {
+            System.out.println("Listing files in reverse order in: " + currentDirectory);
+
+            // List files, sorted in reverse order by name
+            try (Stream<Path> files = Files.list(currentDirectory)) {
+                files.sorted(Comparator.comparing(Path::getFileName).reversed())
+                        .forEach(path -> System.out.println(path.getFileName()));
+            }
+
+        } catch (IOException e) {
+            System.out.println("Error reading directory: " + e.getMessage());
+        }
+    }
+
+    public static void lsGrep(String searchTerm) {
+        try (Stream<Path> stream = Files.list(currentDirectory)) {
+            stream
+                    .filter(path -> path.getFileName().toString().contains(searchTerm))
+                    .map(Path::getFileName) // Extract the filename
+                    .forEach(System.out::println);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public static void lsa(boolean showHidden) {
         try {
@@ -133,25 +171,7 @@ public class CLI {
         }
     }
 
-    public static void lsr() {
-        try {
 
-            System.out.println("Listing files recursively in: " + currentDirectory);
-
-
-            Files.walk(currentDirectory)
-                    .forEach(path -> {
-
-                        String relativePath = currentDirectory.relativize(path).toString();
-
-                        if (!relativePath.isEmpty()) {
-                            System.out.println(relativePath);
-                        }
-                    });
-        } catch (IOException e) {
-            System.out.println("Error reading directory: " + e.getMessage());
-        }
-    }
 
     public static void cd(String path) {
         Path newPath = currentDirectory.resolve(path).normalize();

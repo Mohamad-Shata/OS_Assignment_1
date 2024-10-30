@@ -6,6 +6,14 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.*;
 import java.nio.file.*;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CLITest {
@@ -25,80 +33,83 @@ class CLITest {
     public void tearDown() {
         System.setOut(System.out);
     }
-  
+
+
     @Test
-    public void testLsRecursiveListsFilesInSubdirectories() throws IOException {
-    
-        Path subDir1 = tempDir.resolve("subdir1");
-        Path subDir2 = tempDir.resolve("subdir2");
-        Files.createDirectory(subDir1);
-        Files.createDirectory(subDir2);
-        
-        Path file1 = subDir1.resolve("file1.txt");
-        Path file2 = subDir1.resolve("file2.txt");
-        Path file3 = subDir2.resolve("file3.txt");
-        Files.createFile(file1);
-        Files.createFile(file2);
-        Files.createFile(file3);
-    
-        
-        CLI.lsr();
-    
-        String expectedOutput = "Listing files recursively in: " + tempDir + "\n" +
-                                "subdir1\n" +
-                                "subdir1/file1.txt\n" +
-                                "subdir1/file2.txt\n" +
-                                "subdir2\n" +
-                                "subdir2/file3.txt";
-        assertEquals(expectedOutput.trim(), outputStreamCaptor.toString().trim());
+    void testLsReverse() throws IOException {
+
+        Files.createFile(tempDir.resolve("file1.txt"));
+        Files.createFile(tempDir.resolve("file3.txt"));
+        Files.createFile(tempDir.resolve("file2.txt"));
+
+
+        CLI.lsReverse();
+
+        // Assertions
+        String[] outputLines = outputStreamCaptor.toString().split(System.lineSeparator());
+        List<String> filenames = Stream.of(outputLines)
+                .filter(line -> !line.startsWith("Listing files"))
+                .map(String::trim).collect(Collectors.toList());
+
+        assertEquals(3, filenames.size());
+        assertEquals("file3.txt", filenames.get(0));
+        assertEquals("file2.txt", filenames.get(1));
+        assertEquals("file1.txt", filenames.get(2));
+
+        outputStreamCaptor.reset();
     }
+
+
     @Test
-    public void testLsRecursiveHandlesMultipleFileTypes() throws IOException {
-    
-    Path dir1 = tempDir.resolve("dir1");
-    Path dir2 = tempDir.resolve("dir2");
-    Files.createDirectory(dir1);
-    Files.createDirectory(dir2);
-    
-    Path textFile1 = dir1.resolve("file1.txt");
-    Path textFile2 = dir1.resolve("file2.txt");
-    Path emptyFile = dir2.resolve("emptyFile.txt");
-    Path nestedDir = dir1.resolve("nestedDir");
-    Files.createFile(textFile1);
-    Files.createFile(textFile2);
-    Files.createFile(emptyFile);
-    Files.createDirectory(nestedDir);
-    
-   
-    Path nestedFile = nestedDir.resolve("nestedFile.txt");
-    Files.createFile(nestedFile);
-    
-  
-    CLI.lsr();
-    
-   
-    String expectedOutput = "Listing files recursively in: " + tempDir + "\n" +
-                            "dir1\n" +
-                            "dir1/nestedDir\n" +
-                            "dir1/nestedDir/nestedFile.txt\n" +
-                            "dir1/file1.txt\n" +
-                            "dir1/file2.txt\n" +
-                            "dir2\n" +
-                            "dir2/emptyFile.txt";
-    
-    assertEquals(expectedOutput.trim(), outputStreamCaptor.toString().trim());
+    void testLsReverseEmptyDirectory() {
+        CLI.lsReverse();
+
+
+        String output = outputStreamCaptor.toString().trim();
+        assertTrue(output.startsWith("Listing files") );
+
+        outputStreamCaptor.reset();
+    }
+
+    @Test
+    public void testLsGrep() throws IOException {
+        Path testGrepFile = tempDir.resolve("test_grep.txt");
+        Path otherFile = tempDir.resolve("other_file.txt");
+
+        Files.createFile(testGrepFile);
+        Files.createFile(otherFile);
+
+        CLI.setCurrentDirectory(tempDir);
+
+        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(outContent));
+
+        CLI.lsGrep("test_grep");
+
+        String output = outContent.toString().trim();
+        assertEquals("test_grep.txt", output);
+
+        System.setOut(System.out);
     }
 
     @Test
     public void testLsShowsHiddenFilesWhenFlagIsTrue() throws IOException {
-    
-    Path hiddenFile = tempDir.resolve(".hiddenFile.txt");
-    Files.createFile(hiddenFile);
+        // Create a hidden file in the temporary directory
+        Path hiddenFile = tempDir.resolve(".hiddenFile.txt");
+        Files.createFile(hiddenFile);
 
-    CLI.lsa(true);
-    
-    String expectedOutput = "Listing files in: " + tempDir + "\n" + ".hiddenFile.txt";
-    assertEquals(expectedOutput.trim(), outputStreamCaptor.toString().trim());
+        // Call the CLI method with the flag set to true
+        CLI.lsa(true);
+
+        // Prepare expected output
+        String expectedOutput = "Listing files in: " + tempDir + "\n" + ".hiddenFile.txt";
+
+        // Normalize line endings
+        String actualOutput = outputStreamCaptor.toString().replace("\r\n", "\n");
+        expectedOutput = expectedOutput.replace("\r\n", "\n");
+
+        // Assert that the expected output matches the actual output
+        assertEquals(expectedOutput.trim(), actualOutput.trim());
     }
 
     @Test
