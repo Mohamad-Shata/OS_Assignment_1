@@ -64,7 +64,9 @@ public class CLI {
                 break;
             case "rmdir":
                 if (tokens.length > 1) {
-                    rmdir(tokens[1]);
+                    for (int i = 1; i < tokens.length; i++) {
+                        rmdir(tokens[i]);
+                    }
                 } else {
                     System.out.println("rmdir: missing operand");
                 }
