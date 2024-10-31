@@ -241,9 +241,9 @@ public class CLI {
                 } catch (IOException e) {
                     System.out.println("rm: failed to remove '" + args[i] + "': " + e.getMessage());
                 }
-
-            }else {
-                System.out.println("cannot remove a directory " );
+            }
+            else {
+                System.out.println("rm: cannot remove '" + args[i] + "': is a directory" );
 
             }
         }
