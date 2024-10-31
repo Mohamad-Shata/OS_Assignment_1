@@ -213,7 +213,7 @@ public class CLI {
                 System.out.println("rmdir: '" + dirName + "' is not a directory");
             }
         } catch (IOException e) {
-            System.out.println("rmdir: failed to remove '" + dirName);
+            System.out.println("rmdir: failed to remove '" + dirName + "': Directory not empty");
         }
     }
 
