@@ -39,69 +39,59 @@ class CLITest {
 
     @Test
     void testLs() throws IOException {
-        // Create some test files
         Files.createFile(tempDir.resolve("file1.txt"));
         Files.createFile(tempDir.resolve("file2.txt"));
         Files.createFile(tempDir.resolve("file3.txt"));
 
-        // Call the ls method without options
         CLI.ls(new String[]{});
-
 
         String output = outputStreamCaptor.toString().trim();
 
-
-        List<String> actualFiles = Arrays.stream(output.split("\n"))
-                .filter(line -> !line.startsWith("Listing files in:")) // Ignore the introductory line
+        List<String> actualFiles = Arrays.stream(output.split("\\r?\\n"))
+                .filter(line -> !line.startsWith("Listing files in:"))
+                .map(String::trim)
                 .collect(Collectors.toList());
-
 
         List<String> expectedFiles = Stream.of("file1.txt", "file2.txt", "file3.txt")
                 .sorted()
                 .collect(Collectors.toList());
 
-
         Collections.sort(actualFiles);
 
+        System.out.println("Expected Files: " + expectedFiles);
+        System.out.println("Actual Files: " + actualFiles);
 
         assertEquals(expectedFiles, actualFiles, "The output should match the expected files.");
     }
+    
     @Test
     void testLsReverse() throws IOException {
-
         Files.createFile(tempDir.resolve("file1.txt"));
         Files.createFile(tempDir.resolve("file2.txt"));
         Files.createFile(tempDir.resolve("file3.txt"));
 
         CLI.ls(new String[]{"-r"});
 
-
         String output = outputStreamCaptor.toString().trim();
 
-
-        List<String> actualFiles = Arrays.stream(output.split("\n"))
+        List<String> actualFiles = Arrays.stream(output.split("\\r?\\n"))
                 .filter(line -> !line.startsWith("Listing files in:"))
+                .map(String::trim)
                 .collect(Collectors.toList());
-
 
         List<String> expectedFiles = Stream.of("file3.txt", "file2.txt", "file1.txt")
-                .sorted(Comparator.reverseOrder())
                 .collect(Collectors.toList());
-
 
         Collections.sort(actualFiles, Comparator.reverseOrder());
 
-
         System.out.println("Expected Files: " + expectedFiles);
         System.out.println("Actual Files: " + actualFiles);
-
 
         assertEquals(expectedFiles, actualFiles, "The output should match the expected files in reverse order.");
     }
 
     @Test
     void testLsAll() throws IOException {
-        // Create some test files
         Files.createFile(tempDir.resolve("file1.txt"));
         Files.createFile(tempDir.resolve("file2.txt"));
         Files.createFile(tempDir.resolve(".hiddenFile"));
@@ -111,7 +101,11 @@ class CLITest {
 
         String output = outputStreamCaptor.toString().trim();
         String expectedOutput = ".hiddenFile\nfile1.txt\nfile2.txt\nfile3.txt";
-        assertTrue(output.contains(expectedOutput) || output.equals(expectedOutput.replaceAll("\n", "\r\n")));
+
+        String normalizedOutput = output.replace("\r\n", "\n");
+        String normalizedExpectedOutput = expectedOutput.replace("\r\n", "\n");
+
+        assertTrue(normalizedOutput.contains(normalizedExpectedOutput) || normalizedOutput.equals(normalizedExpectedOutput));
     }
 
 
