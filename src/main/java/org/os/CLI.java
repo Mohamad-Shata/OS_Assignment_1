@@ -137,7 +137,7 @@ public class CLI {
         try {
             System.out.println("Listing files in reverse order in: " + currentDirectory);
 
-            // List files, sorted in reverse order by name
+            
             try (Stream<Path> files = Files.list(currentDirectory)) {
                 files.sorted(Comparator.comparing(Path::getFileName).reversed())
                         .forEach(path -> System.out.println(path.getFileName()));
