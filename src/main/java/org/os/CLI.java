@@ -58,10 +58,10 @@ public class CLI {
                     ls(tokens); // Handle normal ls command
                 }
                 break;
-            case "ls-a":
+            case "ls -a":
                 lsa(running);
                 break;
-            case "ls-r":
+            case "ls -r":
                 lsReverse();
                 break;
             case "mkdir":
