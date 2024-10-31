@@ -84,14 +84,14 @@ public class CLI {
                 break;
             case "touch":
                 if (tokens.length > 1) {
-                    touch(tokens[1]);
+                    touch(Arrays.copyOfRange(tokens, 1, tokens.length));
                 } else {
                     System.out.println("touch: missing operand");
                 }
                 break;
             case "rm":
                 if (tokens.length > 1) {
-                    rm(tokens[1]);
+                    rm(Arrays.copyOfRange(tokens, 1, tokens.length));
                 } else {
                     System.out.println("rm: missing operand");
                 }
@@ -99,7 +99,7 @@ public class CLI {
             case "mv":
                 if (tokens.length > 2) {
 
-                    mv(tokens[1],tokens[2]);
+                    mv(Arrays.copyOfRange(tokens, 1, tokens.length));
                 } else {
                     System.out.println("mv: missing operand");
                 }
@@ -206,61 +206,92 @@ public class CLI {
     public static void rmdir(String dirName) {
         Path dirPath = currentDirectory.resolve(dirName);
         try {
-            Files.delete(dirPath);
-            System.out.println("Directory removed: " + dirName);
-        } catch (IOException e) {
-            System.out.println("rmdir: failed to remove '" + dirName + "': Directory not empty");
-        }
-    }
-
-    public static void touch(String fileName) {
-        Path filePath = currentDirectory.resolve(fileName);
-        try {
-            Files.createFile(filePath);
-            System.out.println("File created: " + fileName);
-        } catch (IOException e) {
-            System.out.println("touch: cannot create file '" + fileName + "': " + e.getMessage());
-        }
-    }
-
-    public static void rm(String fileName) {
-        Path filePath = currentDirectory.resolve(fileName);
-        try {
-            Files.delete(filePath);
-            System.out.println("File removed: " + fileName);
-        } catch (IOException e) {
-            System.out.println("rm: failed to remove '" + fileName + "': " + e.getMessage());
-        }
-    }
-
-
-
-    public static void mv(String sourceName, String targetName) {
-        Path sourcePath = Paths.get(sourceName);
-
-        if (!Files.exists(sourcePath)) {
-            System.out.println("Source file does not exist.");
-            return;
-        }
-
-        Path targetPath = Paths.get(targetName);
-
-        try {
-            if (Files.isDirectory(targetPath)) {
-                Path destination = targetPath.resolve(sourcePath.getFileName());
-                Files.move(sourcePath, destination);
-                System.out.println("File moved to directory: " + destination);
+            if (Files.isDirectory(dirPath)) {
+                Files.delete(dirPath);
+                System.out.println("Directory removed: " + dirName);
             } else {
-                Files.move(sourcePath, targetPath);
-                System.out.println("File renamed to: " + targetPath);
+                System.out.println("rmdir: '" + dirName + "' is not a directory");
             }
         } catch (IOException e) {
-            System.out.println("Error occurred while moving or renaming the file.");
-            e.printStackTrace();
+            System.out.println("rmdir: failed to remove '" + dirName);
         }
-
-
     }
+
+    public static void touch(String ...args) {
+        Path filePath ;
+        for (int i = 0; i < args.length ; i++) {
+            filePath = currentDirectory.resolve(args[i]);
+            try {
+                Files.createFile(filePath);
+                System.out.println("File created: " + args[i]);
+            } catch (IOException e) {
+                System.out.println("touch: cannot create file '" + args[i] + "': " + e.getMessage());
+            }
+        }
+    }
+
+    public static void rm(String ... args) {
+        Path filePath ;
+        for (int i = 0; i < args.length ; i++) {
+            filePath = currentDirectory.resolve(args[i]);
+            if (!Files.isDirectory(filePath)) {
+                try {
+                    Files.delete(filePath);
+                    System.out.println("File removed: " + args[i]);
+                } catch (IOException e) {
+                    System.out.println("rm: failed to remove '" + args[i] + "': " + e.getMessage());
+                }
+
+            }else {
+                System.out.println("cannot remove a directory " );
+
+            }
+        }
+    }
+
+
+
+    public static void mv(String... args) {
+
+        System.out.println(args[args.length - 1]);
+        Path targetPath = Paths.get(args[args.length - 1]);
+
+        if (Files.isDirectory(targetPath)) {
+            // Move each source file to the target directory
+            for (int i = 0; i < args.length - 1; i++) {
+                Path sourcePath = Paths.get(args[i]);
+                if (!Files.exists(sourcePath)) {
+                    System.out.println("mv: cannot move '" + sourcePath + "': No such file");
+                    continue;
+                }
+                try {
+                    Path destination = targetPath.resolve(sourcePath.getFileName());
+                    Files.move(sourcePath, destination, StandardCopyOption.REPLACE_EXISTING);
+                    System.out.println("Moved '" + sourcePath + "' to '" + destination + "'");
+                } catch (IOException e) {
+                    System.out.println("mv: error moving '" + sourcePath + "': " + e.getMessage());
+                }
+            }
+        } else if (args.length == 2) {
+            // If only two arguments are provided, perform a rename operation
+            Path sourcePath = Paths.get(args[0]);
+            if (!Files.exists(sourcePath)) {
+                System.out.println("mv: cannot move '" + sourcePath + "': No such file");
+                return;
+            }
+            try {
+                Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                System.out.println("File renamed to: " + targetPath);
+            } catch (IOException e) {
+                System.out.println("Error occurred while moving or renaming the file.");
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("mv: target '" + targetPath + "' is not a directory");
+        }
+    }
+
+
 
     public static void handleCat(String[] tokens) {
         int redirectIndex = -1;
