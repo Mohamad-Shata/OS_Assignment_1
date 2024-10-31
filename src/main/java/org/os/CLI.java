@@ -5,6 +5,10 @@ import java.util.Scanner;
 import java.util.Arrays;
 import java.util.stream.Stream;
 import java.util.Comparator;
+import java.io.IOException;
+import java.nio.file.*;
+import java.util.Collections;
+import java.util.stream.Collectors;
 
 
 public class CLI {
@@ -55,15 +59,10 @@ public class CLI {
                         System.out.println("Invalid command after pipe");
                     }
                 } else {
-                    ls(tokens); // Handle normal ls command
+                    ls(Arrays.copyOfRange(tokens, 1, tokens.length));// Handle normal ls command
                 }
                 break;
-            case "ls -a":
-                lsa(running);
-                break;
-            case "ls -r":
-                lsReverse();
-                break;
+
             case "mkdir":
                 if (tokens.length > 1) {
                     for (int i = 1; i < tokens.length; i++) {
@@ -124,30 +123,53 @@ public class CLI {
         System.out.println(currentDirectory);
     }
 
-    public static void ls() {
+    public static void ls(String[] options) {
+        boolean showAll = false;
+        boolean reverseOrder = false;
+
+        for (String option : options) {
+            switch (option) {
+                case "-a":
+                    showAll = true;
+                    break;
+                case "-r":
+                    reverseOrder = true;
+                    break;
+                default:
+                    System.out.println("Invalid option: " + option);
+                    return; // Exit if an invalid option is encountered
+            }
+        }
+
         try {
             System.out.println("Listing files in: " + currentDirectory);
-            Files.list(currentDirectory).forEach(path -> System.out.println(path.getFileName()));
-        } catch (IOException e) {
-            System.out.println("Error reading directory: " + e.getMessage());
-        }
-    }
+            Stream<Path> filesStream = Files.list(currentDirectory);
 
-    public static void lsReverse() {
-        try {
-            System.out.println("Listing files in reverse order in: " + currentDirectory);
+            // If -a is specified, show all files; if not, filter out hidden files
+            if (!showAll) {
+                filesStream = filesStream.filter(path -> !path.getFileName().toString().startsWith("."));
+            }
 
-            
-            try (Stream<Path> files = Files.list(currentDirectory)) {
-                files.sorted(Comparator.comparing(Path::getFileName).reversed())
-                        .forEach(path -> System.out.println(path.getFileName()));
+            // Collect the files into a list for manipulation
+            var filesList = filesStream.collect(Collectors.toList());
+
+            // Sort files normally
+            filesList.sort(Comparator.comparing(Path::getFileName));
+
+            // If reverse order is requested, reverse the list
+            if (reverseOrder) {
+                Collections.reverse(filesList);
+            }
+
+            // Print the files
+            for (Path path : filesList) {
+                System.out.println(path.getFileName());
             }
 
         } catch (IOException e) {
             System.out.println("Error reading directory: " + e.getMessage());
         }
     }
-
     public static void lsGrep(String searchTerm) {
         try (Stream<Path> stream = Files.list(currentDirectory)) {
             stream
@@ -160,17 +182,6 @@ public class CLI {
     }
 
 
-    public static void lsa(boolean showHidden) {
-        try {
-            System.out.println("Listing files in: " + currentDirectory);
-            Files.list(currentDirectory)
-                    .filter(path -> showHidden || !path.getFileName().toString().startsWith("."))
-                    .forEach(path -> System.out.println(path.getFileName()));
-        } catch (IOException e) {
-            System.out.println("Error reading directory: " + e.getMessage());
-        }
-    }
-
 
 
     public static void cd(String path) {
@@ -182,16 +193,7 @@ public class CLI {
         }
     }
 
-    public static void ls(String[] args) {
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(currentDirectory)) {
-            for (Path entry : stream) {
-                System.out.print(entry.getFileName() + " ");
-            }
-            System.out.println();
-        } catch (IOException e) {
-            System.out.println("ls: error reading directory");
-        }
-    }
+
 
     public static void mkdir(String dirName) {
         Path dirPath = currentDirectory.resolve(dirName);
@@ -241,9 +243,9 @@ public class CLI {
                 } catch (IOException e) {
                     System.out.println("rm: failed to remove '" + args[i] + "': " + e.getMessage());
                 }
-
-            }else {
-                System.out.println("cannot remove a directory " );
+            }
+            else {
+                System.out.println("rm: cannot remove '" + args[i] + "': is a directory" );
 
             }
         }

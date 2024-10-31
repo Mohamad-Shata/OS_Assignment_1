@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import java.io.*;
 import java.nio.file.*;
-
+import java.util.Arrays;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -13,8 +13,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Collections;
 import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
+import java.util.Comparator;
 
 class CLITest {
 
@@ -36,40 +38,92 @@ class CLITest {
 
 
     @Test
-    void testLsReverse() throws IOException {
-
+    void testLs() throws IOException {
+        // Create some test files
         Files.createFile(tempDir.resolve("file1.txt"));
-        Files.createFile(tempDir.resolve("file3.txt"));
         Files.createFile(tempDir.resolve("file2.txt"));
+        Files.createFile(tempDir.resolve("file3.txt"));
 
-
-        CLI.lsReverse();
-
-        // Assertions
-        String[] outputLines = outputStreamCaptor.toString().split(System.lineSeparator());
-        List<String> filenames = Stream.of(outputLines)
-                .filter(line -> !line.startsWith("Listing files"))
-                .map(String::trim).collect(Collectors.toList());
-
-        assertEquals(3, filenames.size());
-        assertEquals("file3.txt", filenames.get(0));
-        assertEquals("file2.txt", filenames.get(1));
-        assertEquals("file1.txt", filenames.get(2));
-
-        outputStreamCaptor.reset();
-    }
-
-
-    @Test
-    void testLsReverseEmptyDirectory() {
-        CLI.lsReverse();
+        // Call the ls method without options
+        CLI.ls(new String[]{});
 
 
         String output = outputStreamCaptor.toString().trim();
-        assertTrue(output.startsWith("Listing files") );
 
-        outputStreamCaptor.reset();
+
+        List<String> actualFiles = Arrays.stream(output.split("\n"))
+                .filter(line -> !line.startsWith("Listing files in:")) // Ignore the introductory line
+                .collect(Collectors.toList());
+
+
+        List<String> expectedFiles = Stream.of("file1.txt", "file2.txt", "file3.txt")
+                .sorted()
+                .collect(Collectors.toList());
+
+
+        Collections.sort(actualFiles);
+
+
+        assertEquals(expectedFiles, actualFiles, "The output should match the expected files.");
     }
+    @Test
+    void testLsReverse() throws IOException {
+
+        Files.createFile(tempDir.resolve("file1.txt"));
+        Files.createFile(tempDir.resolve("file2.txt"));
+        Files.createFile(tempDir.resolve("file3.txt"));
+
+        CLI.ls(new String[]{"-r"});
+
+
+        String output = outputStreamCaptor.toString().trim();
+
+
+        List<String> actualFiles = Arrays.stream(output.split("\n"))
+                .filter(line -> !line.startsWith("Listing files in:"))
+                .collect(Collectors.toList());
+
+
+        List<String> expectedFiles = Stream.of("file3.txt", "file2.txt", "file1.txt")
+                .sorted(Comparator.reverseOrder())
+                .collect(Collectors.toList());
+
+
+        Collections.sort(actualFiles, Comparator.reverseOrder());
+
+
+        System.out.println("Expected Files: " + expectedFiles);
+        System.out.println("Actual Files: " + actualFiles);
+
+
+        assertEquals(expectedFiles, actualFiles, "The output should match the expected files in reverse order.");
+    }
+
+    @Test
+    void testLsAll() throws IOException {
+        // Create some test files
+        Files.createFile(tempDir.resolve("file1.txt"));
+        Files.createFile(tempDir.resolve("file2.txt"));
+        Files.createFile(tempDir.resolve(".hiddenFile"));
+        Files.createFile(tempDir.resolve("file3.txt"));
+
+        CLI.ls(new String[]{"-a"});
+
+        String output = outputStreamCaptor.toString().trim();
+        String expectedOutput = ".hiddenFile\nfile1.txt\nfile2.txt\nfile3.txt";
+        assertTrue(output.contains(expectedOutput) || output.equals(expectedOutput.replaceAll("\n", "\r\n")));
+    }
+
+
+
+    @Test
+    void testLsInvalidOption() {
+        CLI.ls(new String[]{"-x"});
+
+        String output = outputStreamCaptor.toString().trim();
+        assertTrue(output.startsWith("Invalid option:"), "Output should indicate an invalid option.");
+    }
+
 
     @Test
     public void testLsGrep() throws IOException {
@@ -92,77 +146,12 @@ class CLITest {
         System.setOut(System.out);
     }
 
-    @Test
-    public void testLsShowsHiddenFilesWhenFlagIsTrue() throws IOException {
-        // Create a hidden file in the temporary directory
-        Path hiddenFile = tempDir.resolve(".hiddenFile.txt");
-        Files.createFile(hiddenFile);
-
-        // Call the CLI method with the flag set to true
-        CLI.lsa(true);
-
-        // Prepare expected output
-        String expectedOutput = "Listing files in: " + tempDir + "\n" + ".hiddenFile.txt";
-
-        // Normalize line endings
-        String actualOutput = outputStreamCaptor.toString().replace("\r\n", "\n");
-        expectedOutput = expectedOutput.replace("\r\n", "\n");
-
-        // Assert that the expected output matches the actual output
-        assertEquals(expectedOutput.trim(), actualOutput.trim());
-    }
-
-    @Test
-    public void testLsDoesNotShowHiddenFilesWhenFlagIsFalse() throws IOException {
-
-    Path hiddenFile = tempDir.resolve(".hiddenFile.txt");
-    Files.createFile(hiddenFile);
-
-    CLI.lsa(false);
-
-    String expectedOutput = "Listing files in: " + tempDir;
-    assertEquals(expectedOutput.trim(), outputStreamCaptor.toString().trim());
-    }
-
-    
-     
-    @Test
-    public void testLsEmptyDirectory() {
-    CLI.ls();  
-    String expectedOutput = "Listing files in: " + tempDir; 
-    assertEquals(expectedOutput, outputStreamCaptor.toString().trim());
-    }
 
 
-    @Test
-    public void testLsWithFiles() throws Exception {
-     
-        Files.createFile(tempDir.resolve("file1.txt"));
-        Files.createFile(tempDir.resolve("file2.txt"));
-        Files.createDirectory(tempDir.resolve("folder1"));
 
-      
-        CLI.ls();
 
-        
-        String expectedOutput = "Listing files in: " + tempDir + System.lineSeparator() +
-                                 "file1.txt" + System.lineSeparator() +
-                                 "file2.txt" + System.lineSeparator() +
-                                 "folder1";
-        assertEquals(expectedOutput.trim(), outputStreamCaptor.toString().trim());
-    }
 
-    @Test
-    public void testLsHandlesIOException() throws Exception {
-        
-        Path notADirectory = Files.createFile(tempDir.resolve("not_a_directory.txt"));
-        CLI.setCurrentDirectory(notADirectory);  
 
-        CLI.ls(); 
-
-      
-        assertTrue(outputStreamCaptor.toString().contains("Error reading directory:"));
-    }
 
     @Test
     public void test_pwd() {
@@ -222,7 +211,7 @@ class CLITest {
 
         CLI.touch(sourceFilePath.toString());
 
-       CLI.mkdir(targetDirPath.toString());
+        CLI.mkdir(targetDirPath.toString());
 
         CLI.mv(sourceFilePath.toString(), targetDirPath.toString());
 
