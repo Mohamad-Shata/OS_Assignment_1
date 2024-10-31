@@ -137,7 +137,7 @@ public class CLI {
                     break;
                 default:
                     System.out.println("Invalid option: " + option);
-                    return; // Exit if an invalid option is encountered
+                    return;
             }
         }
 
@@ -145,23 +145,18 @@ public class CLI {
             System.out.println("Listing files in: " + currentDirectory);
             Stream<Path> filesStream = Files.list(currentDirectory);
 
-            // If -a is specified, show all files; if not, filter out hidden files
             if (!showAll) {
                 filesStream = filesStream.filter(path -> !path.getFileName().toString().startsWith("."));
             }
 
-            // Collect the files into a list for manipulation
             var filesList = filesStream.collect(Collectors.toList());
 
-            // Sort files normally
             filesList.sort(Comparator.comparing(Path::getFileName));
 
-            // If reverse order is requested, reverse the list
             if (reverseOrder) {
                 Collections.reverse(filesList);
             }
 
-            // Print the files
             for (Path path : filesList) {
                 System.out.println(path.getFileName());
             }
@@ -174,7 +169,7 @@ public class CLI {
         try (Stream<Path> stream = Files.list(currentDirectory)) {
             stream
                     .filter(path -> path.getFileName().toString().contains(searchTerm))
-                    .map(Path::getFileName) // Extract the filename
+                    .map(Path::getFileName)
                     .forEach(System.out::println);
         } catch (IOException e) {
             e.printStackTrace();
